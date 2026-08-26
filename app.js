@@ -1,48 +1,51 @@
 // ============================================
-// SISTEMA DE ABASTECIMENTO v2.0
-// 100% Offline | Mobile First | Zero Dependencies
+// SISTEMA DE ABASTECIMENTO v2.1
+// Conectado ao Google Sheets | Scroll corrigido | Fotos funcionando
 // ============================================
 
 const CONFIG = {
-  API_URL: localStorage.getItem('gas_url') || 'https://script.google.com/macros/s/AKfycby8YT2SXPf20J5Jq-iJ5E9NhoJCgQGZURVh9A-yg3-tRuOyGk4EBGjZPojfwEJMuDfu/exec',
-  APP_VERSION: '2.0.0',
-  DEMO_MODE: true
+  API_URL: 'https://script.google.com/macros/s/AKfycbxXC-mIH9kNx0ZdERZU3zgfsyrjNFysVVNk5yjswfs-m8RsvPgalSGQyfgfqvdIkZ0F/exec',
+  SHEET_ID: '1oNIv7kL7J0oXky41vUz1_nkf56IBFPpEu9TIYyJIVaA',
+  DRIVE_FOLDER: '1O-UMdVh3Ye2zXcwmOOiblQtcInwd',
+  VERSION: '2.1.0'
 };
 
 // ============================================
 // INDEXEDDB
 // ============================================
 class DB {
-  constructor() {
-    this.name = 'AbastecimentoDB_v2';
-    this.ver = 1;
-    this.db = null;
+  constructor(){
+    this.name='AbastecimentoDB_v2_1';
+    this.ver=1;
+    this.db=null;
   }
-  async open() {
+  async open(){
     return new Promise((res,rej)=>{
-      const r = indexedDB.open(this.name,this.ver);
-      r.onerror = ()=>rej(r.error);
-      r.onsuccess = ()=>{ this.db=r.result; res(this.db); };
-      r.onupgradeneeded = e=>{
-        const d = e.target.result;
-        ['abastecimentos','veiculos','usuarios','config'].forEach(s=>{
-          if(!d.objectStoreNames.contains(s)) d.createObjectStore(s,{keyPath:'id',autoIncrement:true});
-        });
+      const r=indexedDB.open(this.name,this.ver);
+      r.onerror=()=>rej(r.error);
+      r.onsuccess=()=>{this.db=r.result;res(this.db);};
+      r.onupgradeneeded=e=>{
+        const d=e.target.result;
+        if(!d.objectStoreNames.contains('abastecimentos')) d.createObjectStore('abastecimentos',{keyPath:'id'});
+        if(!d.objectStoreNames.contains('veiculos')) d.createObjectStore('veiculos',{keyPath:'id'});
+        if(!d.objectStoreNames.contains('usuarios')) d.createObjectStore('usuarios',{keyPath:'id'});
+        if(!d.objectStoreNames.contains('config')) d.createObjectStore('config',{keyPath:'chave'});
+        if(!d.objectStoreNames.contains('pendentes')) d.createObjectStore('pendentes',{keyPath:'id',autoIncrement:true});
       };
     });
   }
-  async put(store,obj){ return this._tx(store,'readwrite',s=>s.put(obj)); }
-  async getAll(store){ return this._tx(store,'readonly',s=>s.getAll()); }
-  async del(store,id){ return this._tx(store,'readwrite',s=>s.delete(id)); }
-  async clear(store){ return this._tx(store,'readwrite',s=>s.clear()); }
-  async get(store,id){ return this._tx(store,'readonly',s=>s.get(id)); }
+  async put(store,obj){return this._tx(store,'readwrite',s=>s.put(obj));}
+  async getAll(store){return this._tx(store,'readonly',s=>s.getAll());}
+  async del(store,key){return this._tx(store,'readwrite',s=>s.delete(key));}
+  async clear(store){return this._tx(store,'readwrite',s=>s.clear());}
+  async get(store,key){return this._tx(store,'readonly',s=>s.get(key));}
   _tx(store,mode,fn){
     return new Promise((res,rej)=>{
-      const tx = this.db.transaction([store],mode);
-      const os = tx.objectStore(store);
-      const r = fn(os);
-      r.onsuccess = ()=>res(r.result);
-      r.onerror = ()=>rej(r.error);
+      const tx=this.db.transaction([store],mode);
+      const os=tx.objectStore(store);
+      const r=fn(os);
+      r.onsuccess=()=>res(r.result);
+      r.onerror=()=>rej(r.error);
     });
   }
 }
@@ -50,52 +53,52 @@ class DB {
 // ============================================
 // UTILS
 // ============================================
-const $ = id => document.getElementById(id);
-const fmtDate = d => new Date(d).toLocaleDateString('pt-BR');
-const fmtDateTime = d => new Date(d).toLocaleString('pt-BR');
-const fmtNum = n => parseFloat(n).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
-const fmtMoney = n => 'R$ ' + parseFloat(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const $=id=>document.getElementById(id);
+const fmtDate=d=>new Date(d).toLocaleDateString('pt-BR');
+const fmtDateTime=d=>new Date(d).toLocaleString('pt-BR');
+const fmtNum=n=>{const v=parseFloat(n);return isNaN(v)?'0,0':v.toLocaleString('pt-BR',{minFractionDigits:1,maxFractionDigits:1});};
+const fmtMoney=n=>{const v=parseFloat(n);return isNaN(v)?'R$ 0,00':'R$ '+v.toLocaleString('pt-BR',{minFractionDigits:2,maxFractionDigits:2});};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 function toast(msg,type='info',dur=3500){
-  const wrap = $('toastWrap');
-  const t = document.createElement('div');
-  const icons = {ok:'✅',err:'❌',warn:'⚠️',info:'ℹ️'};
-  t.className = 'toast '+type;
-  t.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  const wrap=$('toastWrap');
+  const t=document.createElement('div');
+  const icons={ok:'✅',err:'❌',warn:'⚠️',info:'ℹ️'};
+  t.className='toast '+type;
+  t.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
   wrap.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-20px)';setTimeout(()=>t.remove(),300);},dur);
 }
 
 function loading(show,text='Processando...'){
   $('loadOverlay').classList.toggle('active',show);
-  $('loadText').textContent = text;
+  $('loadText').textContent=text;
 }
 
-function isOnline(){ return navigator.onLine; }
+function isOnline(){return navigator.onLine;}
 
 // ============================================
 // DEMO DATA
 // ============================================
-const DEMO_VEICULOS = [
+const DEMO_VEICULOS=[
   {id:'v1',placa:'ABC1D23',marca:'Toyota',modelo:'Hilux',ano:'2022',combustivel:'Diesel',consumoEsperado:10.5,kmAtual:45230,ativo:true},
   {id:'v2',placa:'DEF4G56',marca:'Volkswagen',modelo:'Saveiro',ano:'2021',combustivel:'Gasolina',consumoEsperado:12.0,kmAtual:32100,ativo:true},
   {id:'v3',placa:'GHI7J89',marca:'Fiat',modelo:'Strada',ano:'2023',combustivel:'Flex',consumoEsperado:13.5,kmAtual:18500,ativo:true},
   {id:'v4',placa:'JKL0M12',marca:'Ford',modelo:'Ranger',ano:'2020',combustivel:'Diesel',consumoEsperado:9.8,kmAtual:67800,ativo:true},
 ];
 
-const DEMO_USERS = [
+const DEMO_USERS=[
   {id:'u1',nome:'Administrador',email:'admin@empresa.com',senha:'admin123',nivel:'adm',ativo:true},
   {id:'u2',nome:'Operador',email:'op@empresa.com',senha:'op1234',nivel:'operacao',ativo:true},
 ];
 
-const DEMO_ABASTECIMENTOS = [
-  {id:'a1',placa:'ABC1D23',kmAnterior:44800,km:45010,autonomia:210,litros:20.5,consumo:10.24,combustivel:'Diesel',valor:120.50,posto:'Posto Shell',usuario:'admin@empresa.com',data:'2026-08-01T09:30:00',obs:''},
-  {id:'a2',placa:'ABC1D23',kmAnterior:45010,km:45230,autonomia:220,litros:21.0,consumo:10.48,combustivel:'Diesel',valor:126.00,posto:'Posto Ipiranga',usuario:'op@empresa.com',data:'2026-08-10T14:15:00',obs:''},
-  {id:'a3',placa:'DEF4G56',kmAnterior:31850,km:32100,autonomia:250,litros:21.5,consumo:11.63,combustivel:'Gasolina',valor:150.00,posto:'Posto BR',usuario:'admin@empresa.com',data:'2026-08-05T11:00:00',obs:''},
-  {id:'a4',placa:'GHI7J89',kmAnterior:18300,km:18500,autonomia:200,litros:15.2,consumo:13.16,combustivel:'Etanol',valor:85.00,posto:'Posto Ale',usuario:'op@empresa.com',data:'2026-08-12T08:45:00',obs:''},
-  {id:'a5',placa:'JKL0M12',kmAnterior:67500,km:67800,autonomia:300,litros:32.5,consumo:9.23,combustivel:'Diesel',valor:195.00,posto:'Posto Shell',usuario:'admin@empresa.com',data:'2026-08-15T16:20:00',obs:'Tanque cheio'},
-  {id:'a6',placa:'ABC1D23',kmAnterior:45230,km:45480,autonomia:250,litros:28.0,consumo:8.93,combustivel:'Diesel',valor:168.00,posto:'Posto Ipiranga',usuario:'op@empresa.com',data:'2026-08-20T10:00:00',obs:''},
+const DEMO_ABASTECIMENTOS=[
+  {id:'a1',placa:'ABC1D23',kmAnt:44800,km:45010,autonomia:210,litros:20.5,consumo:10.24,combustivel:'Diesel',valor:120.50,posto:'Posto Shell',usuario:'admin@empresa.com',data:'2026-08-01T09:30:00',obs:'',fotoOdometro:'',fotoNota:''},
+  {id:'a2',placa:'ABC1D23',kmAnt:45010,km:45230,autonomia:220,litros:21.0,consumo:10.48,combustivel:'Diesel',valor:126.00,posto:'Posto Ipiranga',usuario:'op@empresa.com',data:'2026-08-10T14:15:00',obs:'',fotoOdometro:'',fotoNota:''},
+  {id:'a3',placa:'DEF4G56',kmAnt:31850,km:32100,autonomia:250,litros:21.5,consumo:11.63,combustivel:'Gasolina',valor:150.00,posto:'Posto BR',usuario:'admin@empresa.com',data:'2026-08-05T11:00:00',obs:'',fotoOdometro:'',fotoNota:''},
+  {id:'a4',placa:'GHI7J89',kmAnt:18300,km:18500,autonomia:200,litros:15.2,consumo:13.16,combustivel:'Etanol',valor:85.00,posto:'Posto Ale',usuario:'op@empresa.com',data:'2026-08-12T08:45:00',obs:'',fotoOdometro:'',fotoNota:''},
+  {id:'a5',placa:'JKL0M12',kmAnt:67500,km:67800,autonomia:300,litros:32.5,consumo:9.23,combustivel:'Diesel',valor:195.00,posto:'Posto Shell',usuario:'admin@empresa.com',data:'2026-08-15T16:20:00',obs:'Tanque cheio',fotoOdometro:'',fotoNota:''},
+  {id:'a6',placa:'ABC1D23',kmAnt:45230,km:45480,autonomia:250,litros:28.0,consumo:8.93,combustivel:'Diesel',valor:168.00,posto:'Posto Ipiranga',usuario:'op@empresa.com',data:'2026-08-20T10:00:00',obs:'',fotoOdometro:'',fotoNota:''},
 ];
 
 // ============================================
@@ -103,44 +106,56 @@ const DEMO_ABASTECIMENTOS = [
 // ============================================
 class App {
   constructor(){
-    this.db = new DB();
-    this.user = null;
-    this.data = {abast:[],veic:[],users:[]};
-    this.fotos = {odometro:null,nota:null};
-    this.lancando = false;
-    this.tabGestao = 'veiculos';
-    this.chartInstances = {};
+    this.db=new DB();
+    this.user=null;
+    this.data={abast:[],veic:[],users:[]};
+    this.fotos={odometro:null,nota:null};
+    this.lancando=false;
+    this.tabGestao='veiculos';
   }
 
   async init(){
     await this.db.open();
 
+    // Touch scroll corrigido - so bloqueia pull-to-refresh no topo do container
+    this.setupTouchScroll();
+
+    // Monitor conexao
+    this.setupConnection();
+
+    // Registrar SW
+    this.registerSW();
+
     // Carregar sessao
-    const sess = await this.db.get('config','sessao');
+    const sess=await this.db.get('config','sessao');
     if(sess){
-      this.user = sess;
+      this.user=sess;
       await this.loadData();
       this.showApp();
     } else {
       this.showLogin();
     }
-
-    this.setupEvents();
-    this.setupConnection();
-    this.registerSW();
   }
 
   // ============================================
-  // EVENTOS GLOBAIS
+  // TOUCH SCROLL CORRIGIDO
   // ============================================
-  setupEvents(){
-    // Bloquear swipe-to-refresh
+  setupTouchScroll(){
+    const scrollArea=$('scrollArea');
     let startY=0;
-    document.addEventListener('touchstart',e=>{startY=e.touches[0].clientY;},{passive:true});
-    document.addEventListener('touchmove',e=>{
-      const st=document.scrollingElement.scrollTop;
-      const cy=e.touches[0].clientY;
-      if(st<=0 && cy>startY) e.preventDefault();
+
+    scrollArea.addEventListener('touchstart',e=>{
+      startY=e.touches[0].clientY;
+    },{passive:true});
+
+    scrollArea.addEventListener('touchmove',e=>{
+      const currentY=e.touches[0].clientY;
+      const isAtTop=scrollArea.scrollTop<=0;
+      const isPullingDown=currentY>startY;
+      // So bloqueia o pull-to-refresh quando no topo puxando pra baixo
+      if(isAtTop && isPullingDown){
+        e.preventDefault();
+      }
     },{passive:false});
 
     // Bloquear botao voltar durante lancamento
@@ -151,14 +166,13 @@ class App {
         this.openModal('modalBloqueio');
       }
     });
-
-    // Tecla Enter no login
-    $('loginSenha').addEventListener('keypress',e=>{if(e.key==='Enter')this.doLogin();});
   }
 
   setupConnection(){
     const update=()=>{
       $('offlineBar').classList.toggle('active',!isOnline());
+      const modo=$('modoOp');
+      if(modo) modo.textContent=isOnline()?'Online':'Offline';
     };
     window.addEventListener('online',update);
     window.addEventListener('offline',update);
@@ -167,8 +181,8 @@ class App {
 
   async registerSW(){
     if('serviceWorker' in navigator){
-      try{ await navigator.serviceWorker.register('sw.js'); }
-      catch(e){ console.log('SW skip'); }
+      try{await navigator.serviceWorker.register('sw.js');}
+      catch(e){console.log('SW nao registrado');}
     }
   }
 
@@ -178,29 +192,39 @@ class App {
   async doLogin(){
     const email=$('loginEmail').value.trim().toLowerCase();
     const senha=$('loginSenha').value;
-    if(!email||!senha){ toast('Preencha email e senha','warn'); return; }
+    if(!email||!senha){toast('Preencha email e senha','warn');return;}
 
     loading(true,'Autenticando...');
-    await new Promise(r=>setTimeout(r,600)); // feedback visual
+    await new Promise(r=>setTimeout(r,500));
 
-    // Buscar usuario local
-    const users = await this.db.getAll('usuarios');
-    let found = users.find(u=>u.email===email && u.senha===senha);
+    // Tentar login online primeiro
+    let found=null;
+    if(isOnline()){
+      try{
+        const resp=await fetch(CONFIG.API_URL+'?acao=login&email='+encodeURIComponent(email)+'&senha='+encodeURIComponent(senha));
+        const data=await resp.json();
+        if(data.sucesso) found=data.usuario;
+      }catch(e){console.log('Login online falhou, tentando offline');}
+    }
 
-    // Se nao achou e tem demo, popular demo
-    if(!found && CONFIG.DEMO_MODE){
-      const demoUser = DEMO_USERS.find(u=>u.email===email && u.senha===senha);
-      if(demoUser){
-        await this.seedDemo();
-        found = demoUser;
+    // Fallback offline
+    if(!found){
+      const users=await this.db.getAll('usuarios');
+      found=users.find(u=>u.email===email&&u.senha===senha&&u.ativo);
+      if(!found){
+        // Seed demo se vazio
+        const allUsers=await this.db.getAll('usuarios');
+        if(allUsers.length===0) await this.seedDemo();
+        const users2=await this.db.getAll('usuarios');
+        found=users2.find(u=>u.email===email&&u.senha===senha&&u.ativo);
       }
     }
 
     loading(false);
 
     if(found){
-      this.user = found;
-      await this.db.put('config',{id:'sessao',...found});
+      this.user=found;
+      await this.db.put('config',{chave:'sessao',...found});
       toast('Bem-vindo, '+found.nome+'!','ok');
       this.showApp();
     } else {
@@ -209,19 +233,12 @@ class App {
   }
 
   async seedDemo(){
-    // Popular dados demo se DB vazio
-    const veic = await this.db.getAll('veiculos');
-    if(veic.length===0){
-      for(const v of DEMO_VEICULOS) await this.db.put('veiculos',v);
-    }
-    const users = await this.db.getAll('usuarios');
-    if(users.length===0){
-      for(const u of DEMO_USERS) await this.db.put('usuarios',u);
-    }
-    const abs = await this.db.getAll('abastecimentos');
-    if(abs.length===0){
-      for(const a of DEMO_ABASTECIMENTOS) await this.db.put('abastecimentos',a);
-    }
+    const veic=await this.db.getAll('veiculos');
+    if(veic.length===0) for(const v of DEMO_VEICULOS) await this.db.put('veiculos',v);
+    const users=await this.db.getAll('usuarios');
+    if(users.length===0) for(const u of DEMO_USERS) await this.db.put('usuarios',u);
+    const abs=await this.db.getAll('abastecimentos');
+    if(abs.length===0) for(const a of DEMO_ABASTECIMENTOS) await this.db.put('abastecimentos',a);
   }
 
   async doLogout(){
@@ -256,29 +273,35 @@ class App {
       return;
     }
 
-    // Nav items
     document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
     const map={dashboard:0,lancamento:1,historico:2,gestao:3,perfil:4};
     const items=document.querySelectorAll('.nav-item');
     if(items[map[tab]]) items[map[tab]].classList.add('active');
 
-    // Screens
     document.querySelectorAll('.scroll > .screen').forEach(el=>el.classList.remove('active'));
     $(`tab${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.add('active');
 
-    // Titulo
     const titles={dashboard:'Inicio',lancamento:'Abastecer',historico:'Historico',gestao:'Gestao',perfil:'Perfil'};
     $('headerTitle').textContent=titles[tab];
 
-    // Carregar dados
     if(tab==='dashboard') this.loadDashboard();
     if(tab==='lancamento') this.loadLancamento();
     if(tab==='historico') this.loadHistorico();
     if(tab==='gestao') this.loadGestao();
     if(tab==='perfil') this.loadPerfil();
 
-    // Scroll top
     $('scrollArea').scrollTop=0;
+  }
+
+  // ============================================
+  // DATA LOADING
+  // ============================================
+  async loadData(){
+    this.data.abast=await this.db.getAll('abastecimentos');
+    this.data.veic=await this.db.getAll('veiculos');
+    this.data.users=await this.db.getAll('usuarios');
+    const nReg=$('nRegistros');
+    if(nReg) nReg.textContent=this.data.abast.length;
   }
 
   // ============================================
@@ -288,7 +311,6 @@ class App {
     await this.loadData();
     const abs=this.data.abast;
 
-    // KPIs
     $('kpiTotal').textContent=abs.length;
 
     let totKm=0,totL=0,totV=0;
@@ -297,12 +319,11 @@ class App {
       if(a.litros) totL+=parseFloat(a.litros);
       if(a.valor) totV+=parseFloat(a.valor);
     });
-    const cMedio=totL>0?(totKm/totL).toFixed(1):'0,0';
-    const cKm=totKm>0?(totV/totKm).toFixed(2):'0,00';
+    const cMedio=totL>0?(totKm/totL).toFixed(1).replace('.',','):'0,0';
+    const cKm=totKm>0?(totV/totKm).toFixed(2).replace('.',','):'0,00';
     $('kpiConsumo').textContent=cMedio;
     $('kpiCusto').textContent='R$ '+cKm;
 
-    // Alertas
     const alertas=this.calcAlertas();
     $('kpiAlertas').textContent=alertas.length;
     const alertBox=$('dashAlertas');
@@ -318,7 +339,6 @@ class App {
       `).join('');
     }
 
-    // Graficos
     this.drawBarChart('chartConsumo',this.buildConsumoData());
     this.drawLineChart('chartGasto',this.buildGastoData());
   }
@@ -343,7 +363,7 @@ class App {
         const esp=parseFloat(v.consumoEsperado);
         const pct=((real-esp)/esp*100).toFixed(0);
         if(parseFloat(pct)>20){
-          alertas.push({placa,veiculo:(v.marca||'')+' '+(v.modelo||''),real:real.toFixed(1),esperado:esp,pct});
+          alertas.push({placa,veiculo:(v.marca||'')+' '+(v.modelo||''),real:real.toFixed(1).replace('.',','),esperado:esp,pct});
         }
       }
     }
@@ -351,7 +371,7 @@ class App {
   }
 
   buildConsumoData(){
-    const data={},corte=new Date(); corte.setDate(corte.getDate()-30);
+    const data={},corte=new Date();corte.setDate(corte.getDate()-30);
     this.data.abast.filter(a=>new Date(a.data)>=corte).forEach(a=>{
       if(!data[a.placa]) data[a.placa]={km:0,l:0};
       if(a.autonomia) data[a.placa].km+=parseFloat(a.autonomia);
@@ -377,7 +397,7 @@ class App {
   }
 
   // ============================================
-  // CANVAS CHARTS (nativo, zero deps)
+  // CANVAS CHARTS
   // ============================================
   drawBarChart(canvasId,data){
     const canvas=$(canvasId); if(!canvas) return;
@@ -388,49 +408,34 @@ class App {
     canvas.style.width=w+'px'; canvas.style.height=h+'px';
     ctx.scale(2,2);
 
-    if(data.length===0){ ctx.fillStyle='#6b7280'; ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.fillText('Sem dados',w/2,h/2); return; }
+    if(data.length===0){ctx.fillStyle='#6b7280';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados',w/2,h/2);return;}
 
     const pad={t:10,r:10,b:30,l:40};
-    const cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+    const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
     const max=Math.max(...data.map(d=>parseFloat(d.value)))||1;
-    const barW=(cw/data.length)*0.6;
-    const gap=(cw/data.length)*0.4;
+    const n=data.length;
+    const barW=(cw/n)*0.6;
+    const gap=(cw/n)*0.4;
 
     ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){const y=pad.t+ch-(i/4)*ch;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
 
-    // Grid
-    ctx.strokeStyle='rgba(255,255,255,0.05)';
-    ctx.lineWidth=1;
-    for(let i=0;i<=4;i++){
-      const y=pad.t+ch-(i/4)*ch;
-      ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
-    }
-
-    // Bars
     data.forEach((d,i)=>{
       const x=pad.l+i*(barW+gap)+gap/2;
       const bh=(parseFloat(d.value)/max)*ch;
       const y=pad.t+ch-bh;
       const grad=ctx.createLinearGradient(0,y,0,y+bh);
-      grad.addColorStop(0,'#60a5fa'); grad.addColorStop(1,'#3b82f6');
-      ctx.fillStyle=grad;
-      ctx.beginPath(); ctx.roundRect(x,y,barW,bh,4); ctx.fill();
-
-      // Label
-      ctx.fillStyle='#9ca3af'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+      grad.addColorStop(0,'#60a5fa');grad.addColorStop(1,'#3b82f6');
+      ctx.fillStyle=grad;ctx.beginPath();ctx.roundRect(x,y,barW,bh,4);ctx.fill();
+      ctx.fillStyle='#9ca3af';ctx.font='11px sans-serif';ctx.textAlign='center';
       ctx.fillText(d.label,x+barW/2,h-8);
-
-      // Value
-      ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif';
-      ctx.fillText(d.value,x+barW/2,y-6);
+      ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';
+      ctx.fillText(d.value.replace('.',','),x+barW/2,y-6);
     });
 
-    // Y axis labels
-    ctx.fillStyle='#6b7280'; ctx.font='10px sans-serif'; ctx.textAlign='right';
-    for(let i=0;i<=4;i++){
-      const val=(max*(i/4)).toFixed(1);
-      ctx.fillText(val,pad.l-6,pad.t+ch-(i/4)*ch+3);
-    }
+    ctx.fillStyle='#6b7280';ctx.font='10px sans-serif';ctx.textAlign='right';
+    for(let i=0;i<=4;i++){const val=(max*(i/4)).toFixed(1).replace('.',',');ctx.fillText(val,pad.l-6,pad.t+ch-(i/4)*ch+3);}
   }
 
   drawLineChart(canvasId,dataObj){
@@ -442,60 +447,38 @@ class App {
     canvas.style.width=w+'px'; canvas.style.height=h+'px';
     ctx.scale(2,2);
 
-    const labels=dataObj.labels||[], values=dataObj.values||[];
-    if(labels.length===0){ ctx.fillStyle='#6b7280'; ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.fillText('Sem dados',w/2,h/2); return; }
+    const labels=dataObj.labels||[],values=dataObj.values||[];
+    if(labels.length===0){ctx.fillStyle='#6b7280';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados',w/2,h/2);return;}
 
     const pad={t:20,r:10,b:35,l:45};
-    const cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+    const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
     const max=Math.max(...values.map(v=>parseFloat(v)))||1;
     const stepX=cw/(labels.length-1||1);
 
     ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){const y=pad.t+ch-(i/4)*ch;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
 
-    // Grid
-    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-    for(let i=0;i<=4;i++){
-      const y=pad.t+ch-(i/4)*ch;
-      ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
-    }
-
-    // Line
-    ctx.strokeStyle='#22c55e'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2.5;ctx.lineJoin='round';
     ctx.beginPath();
-    values.forEach((v,i)=>{
-      const x=pad.l+i*stepX;
-      const y=pad.t+ch-(parseFloat(v)/max)*ch;
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
+    values.forEach((v,i)=>{const x=pad.l+i*stepX;const y=pad.t+ch-(parseFloat(v)/max)*ch;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
     ctx.stroke();
 
-    // Fill area
     ctx.fillStyle='rgba(34,197,94,0.1)';
     ctx.lineTo(pad.l+(values.length-1)*stepX,pad.t+ch);
-    ctx.lineTo(pad.l,pad.t+ch);
-    ctx.closePath(); ctx.fill();
+    ctx.lineTo(pad.l,pad.t+ch);ctx.closePath();ctx.fill();
 
-    // Points
     values.forEach((v,i)=>{
-      const x=pad.l+i*stepX;
-      const y=pad.t+ch-(parseFloat(v)/max)*ch;
-      ctx.fillStyle='#22c55e'; ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+      const x=pad.l+i*stepX;const y=pad.t+ch-(parseFloat(v)/max)*ch;
+      ctx.fillStyle='#22c55e';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
       ctx.fillText('R$'+parseFloat(v).toFixed(0),x,y-10);
     });
 
-    // X labels
-    ctx.fillStyle='#6b7280'; ctx.font='10px sans-serif'; ctx.textAlign='center';
-    labels.forEach((l,i)=>{
-      ctx.fillText(l,pad.l+i*stepX,h-10);
-    });
-
-    // Y labels
+    ctx.fillStyle='#6b7280';ctx.font='10px sans-serif';ctx.textAlign='center';
+    labels.forEach((l,i)=>ctx.fillText(l,pad.l+i*stepX,h-10));
     ctx.textAlign='right';
-    for(let i=0;i<=4;i++){
-      const val=(max*(i/4)).toFixed(0);
-      ctx.fillText('R$'+val,pad.l-6,pad.t+ch-(i/4)*ch+3);
-    }
+    for(let i=0;i<=4;i++){const val=(max*(i/4)).toFixed(0);ctx.fillText('R$'+val,pad.l-6,pad.t+ch-(i/4)*ch+3);}
   }
 
   // ============================================
@@ -517,7 +500,7 @@ class App {
 
   onVeicChange(){
     const placa=$('lancPlaca').value;
-    if(!placa){ $('lancKmAnt').textContent='KM anterior: --'; return; }
+    if(!placa){$('lancKmAnt').textContent='KM anterior: --';return;}
     const v=this.data.veic.find(x=>x.placa===placa);
     if(v){
       $('lancKmAnt').textContent='KM anterior: '+(v.kmAtual||0).toLocaleString('pt-BR');
@@ -525,10 +508,10 @@ class App {
     }
   }
 
-  pickPhoto(tipo){ $(`file${tipo}`).click(); }
+  pickPhoto(tipo){$(`file${tipo}`).click();}
 
   onPhoto(input,tipo){
-    const file=input.files[0]; if(!file) return;
+    const file=input.files[0];if(!file)return;
     const reader=new FileReader();
     reader.onload=e=>{
       this.fotos[tipo]=e.target.result;
@@ -565,8 +548,8 @@ class App {
     const litros=parseFloat($('lancLitros').value);
     const comb=$('lancComb').value;
     const valor=parseFloat($('lancValor').value);
-    if(!placa||!km||!litros||!comb||!valor){ toast('Preencha todos os campos obrigatorios','warn'); return; }
-    if(!this.fotos.odometro||!this.fotos.nota){ toast('Tire as duas fotos','warn'); return; }
+    if(!placa||!km||!litros||!comb||!valor){toast('Preencha todos os campos obrigatorios','warn');return;}
+    if(!this.fotos.odometro||!this.fotos.nota){toast('Tire as duas fotos','warn');return;}
 
     const v=this.data.veic.find(x=>x.placa===placa);
     const kmAnt=v?parseFloat(v.kmAtual||0):0;
@@ -578,30 +561,49 @@ class App {
       posto:$('lancPosto').value||'',obs:$('lancObs').value||'',
       consumo,usuario:this.user.email,
       data:new Date().toISOString(),
-      fotoOdometro:this.fotos.odometro,fotoNota:this.fotos.nota
+      fotoOdometro:this.fotos.odometro||'',
+      fotoNota:this.fotos.nota||''
     };
 
     loading(true,'Salvando...');
-    await new Promise(r=>setTimeout(r,500));
 
-    await this.db.put('abastecimentos',obj);
-    if(v){ v.kmAtual=km; await this.db.put('veiculos',v); }
-
-    // Tentar sync se online e URL configurada
-    if(isOnline()&&CONFIG.API_URL){
+    // TENTAR SALVAR NO GOOGLE SHEETS PRIMEIRO
+    let salvoOnline=false;
+    if(isOnline()){
       try{
-        await fetch(CONFIG.API_URL+'?acao=salvar&'+new URLSearchParams({json:JSON.stringify(obj)}));
-      }catch(e){/*silent*/}
+        const resp=await fetch(CONFIG.API_URL,{
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body:'acao=salvarAbast&json='+encodeURIComponent(JSON.stringify(obj))
+        });
+        const data=await resp.json();
+        if(data.sucesso){
+          salvoOnline=true;
+          toast('Salvo na planilha!','ok');
+        }
+      }catch(e){console.log('Erro ao salvar online:',e);}
+    }
+
+    // Sempre salva no IndexedDB (cache local)
+    await this.db.put('abastecimentos',obj);
+
+    // Atualizar KM do veiculo
+    if(v){v.kmAtual=km;await this.db.put('veiculos',v);}
+
+    // Se nao salvou online, salvar como pendente
+    if(!salvoOnline){
+      await this.db.put('pendentes',{id:uid(),dados:obj,tipo:'abastecimento',dataCriacao:new Date().toISOString()});
+      toast('Salvo localmente. Sincronize para enviar a planilha.','warn');
     }
 
     loading(false);
-    toast('Abastecimento salvo!','ok');
     this.lancando=false;
+    this.clearLanc();
     this.nav('dashboard');
   }
 
-  continuarLanc(){ this.closeModal('modalBloqueio'); }
-  descartarLanc(){ this.lancando=false; this.closeModal('modalBloqueio'); this.clearLanc(); this.nav('dashboard'); }
+  continuarLanc(){this.closeModal('modalBloqueio');}
+  descartarLanc(){this.lancando=false;this.closeModal('modalBloqueio');this.clearLanc();this.nav('dashboard');}
 
   // ============================================
   // HISTORICO
@@ -613,7 +615,7 @@ class App {
 
   renderHist(lista){
     const box=$('histList');
-    if(lista.length===0){ box.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><h3>Nenhum registro</h3></div>`; return; }
+    if(lista.length===0){box.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><h3>Nenhum registro</h3></div>`;return;}
     const ord=lista.sort((a,b)=>new Date(b.data)-new Date(a.data));
     box.innerHTML=ord.map((a,i)=>{
       const d=fmtDate(a.data);
@@ -636,7 +638,16 @@ class App {
   }
 
   verDetalhe(id){
-    const a=this.data.abast.find(x=>x.id===id); if(!a) return;
+    const a=this.data.abast.find(x=>x.id===id);if(!a)return;
+
+    let fotosHtml='';
+    if(a.fotoOdometro||a.fotoNota){
+      fotosHtml='<div class="foto-grid">';
+      if(a.fotoOdometro) fotosHtml+=`<img src="${a.fotoOdometro}" alt="Odometro" onclick="window.open('${a.fotoOdometro}')">`;
+      if(a.fotoNota) fotosHtml+=`<img src="${a.fotoNota}" alt="Nota" onclick="window.open('${a.fotoNota}')">`;
+      fotosHtml+='</div>';
+    }
+
     $('detBody').innerHTML=`
       <div style="font-size:14px;line-height:1.8;color:var(--text-sec)">
         <p><strong style="color:var(--text)">Placa:</strong> ${a.placa}</p>
@@ -651,10 +662,7 @@ class App {
         <p><strong style="color:var(--text)">Usuario:</strong> ${a.usuario}</p>
         <p><strong style="color:var(--text)">Obs:</strong> ${a.obs||'-'}</p>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
-        ${a.fotoOdometro?`<img src="${a.fotoOdometro}" style="width:100%;border-radius:10px" onclick="window.open('${a.fotoOdometro}')">`:''}
-        ${a.fotoNota?`<img src="${a.fotoNota}" style="width:100%;border-radius:10px" onclick="window.open('${a.fotoNota}')">`:''}
-      </div>`;
+      ${fotosHtml}`;
     this.openModal('modalDetalhe');
   }
 
@@ -662,7 +670,7 @@ class App {
   // GESTAO
   // ============================================
   async loadGestao(){
-    if(this.user.nivel!=='adm'){ toast('Acesso restrito','warn'); this.nav('dashboard'); return; }
+    if(this.user.nivel!=='adm'){toast('Acesso restrito','warn');this.nav('dashboard');return;}
     await this.loadData();
     this.switchGestaoTab(this.tabGestao);
   }
@@ -670,11 +678,10 @@ class App {
   switchGestaoTab(tab){
     this.tabGestao=tab;
     document.querySelectorAll('.tab').forEach((el,i)=>{
-      el.classList.toggle('active', (tab==='veiculos'&&i===0)||(tab==='usuarios'&&i===1)||(tab==='relatorios'&&i===2) );
+      el.classList.toggle('active',(tab==='veiculos'&&i===0)||(tab==='usuarios'&&i===1)||(tab==='relatorios'&&i===2));
     });
     document.querySelectorAll('#gestVeiculos,#gestUsuarios,#gestRelatorios').forEach(el=>el.classList.remove('active'));
     $(`gest${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.add('active');
-
     if(tab==='veiculos') this.renderVeiculos();
     if(tab==='usuarios') this.renderUsuarios();
     if(tab==='relatorios') this.loadRelatorios();
@@ -682,48 +689,38 @@ class App {
 
   renderVeiculos(){
     const box=$('listaVeiculos');
-    if(this.data.veic.length===0){ box.innerHTML=`<div class="empty"><div class="empty-ico">🚗</div><h3>Nenhum veiculo</h3></div>`; return; }
+    if(this.data.veic.length===0){box.innerHTML=`<div class="empty"><div class="empty-ico">🚗</div><h3>Nenhum veiculo</h3></div>`;return;}
     box.innerHTML=this.data.veic.map((v,i)=>{
       const n=this.data.abast.filter(a=>a.placa===v.placa).length;
-      return `<div class="list-item" style="animation-delay:${i*0.03}s">
-        <div class="list-ico">🚗</div>
-        <div class="list-body"><div class="list-title">${v.placa}</div><div class="list-sub">${v.marca||''} ${v.modelo||''} • ${n} abast.</div></div>
-        <span class="list-badge badge-info">${(v.kmAtual||0).toLocaleString('pt-BR')} km</span>
-      </div>`;
+      return `<div class="list-item" style="animation-delay:${i*0.03}s"><div class="list-ico">🚗</div><div class="list-body"><div class="list-title">${v.placa}</div><div class="list-sub">${v.marca||''} ${v.modelo||''} • ${n} abast.</div></div><span class="list-badge badge-info">${(v.kmAtual||0).toLocaleString('pt-BR')} km</span></div>`;
     }).join('');
   }
 
   renderUsuarios(){
     const box=$('listaUsuarios');
-    if(this.data.users.length===0){ box.innerHTML=`<div class="empty"><div class="empty-ico">👥</div><h3>Nenhum usuario</h3></div>`; return; }
-    box.innerHTML=this.data.users.map((u,i)=>`
-      <div class="list-item" style="animation-delay:${i*0.03}s">
-        <div class="list-ico">👤</div>
-        <div class="list-body"><div class="list-title">${u.nome}</div><div class="list-sub">${u.email}</div></div>
-        <span class="list-badge ${u.nivel==='adm'?'badge-warn':'badge-info'}">${u.nivel==='adm'?'ADM':'OP'}</span>
-      </div>
-    `).join('');
+    if(this.data.users.length===0){box.innerHTML=`<div class="empty"><div class="empty-ico">👥</div><h3>Nenhum usuario</h3></div>`;return;}
+    box.innerHTML=this.data.users.map((u,i)=>`<div class="list-item" style="animation-delay:${i*0.03}s"><div class="list-ico">👤</div><div class="list-body"><div class="list-title">${u.nome}</div><div class="list-sub">${u.email}</div></div><span class="list-badge ${u.nivel==='adm'?'badge-warn':'badge-info'}">${u.nivel==='adm'?'ADM':'OP'}</span></div>`).join('');
   }
 
   async loadRelatorios(){
     const sel=$('relVeiculo');
     sel.innerHTML='<option value="">Todos os veiculos</option>';
-    this.data.veic.forEach(v=>{ const o=document.createElement('option'); o.value=v.placa; o.textContent=v.placa; sel.appendChild(o); });
+    this.data.veic.forEach(v=>{const o=document.createElement('option');o.value=v.placa;o.textContent=v.placa;sel.appendChild(o);});
     this.gerarRelatorio();
   }
 
   gerarRelatorio(){
     const dias=parseInt($('relPeriodo').value);
     const placa=$('relVeiculo').value;
-    const corte=new Date(); corte.setDate(corte.getDate()-dias);
+    const corte=new Date();corte.setDate(corte.getDate()-dias);
     let fil=this.data.abast.filter(a=>new Date(a.data)>=corte);
     if(placa) fil=fil.filter(a=>a.placa===placa);
 
     let totL=0,totV=0,totKm=0;
-    fil.forEach(a=>{ if(a.litros)totL+=parseFloat(a.litros); if(a.valor)totV+=parseFloat(a.valor); if(a.autonomia)totKm+=parseFloat(a.autonomia); });
-    const cMed=totL>0?(totKm/totL).toFixed(1):'0,0';
-    const cKm=totKm>0?(totV/totKm).toFixed(2):'0,00';
-    const pMed=totL>0?(totV/totL).toFixed(2):'0,00';
+    fil.forEach(a=>{if(a.litros)totL+=parseFloat(a.litros);if(a.valor)totV+=parseFloat(a.valor);if(a.autonomia)totKm+=parseFloat(a.autonomia);});
+    const cMed=totL>0?(totKm/totL).toFixed(1).replace('.',','):'0,0';
+    const cKm=totKm>0?(totV/totKm).toFixed(2).replace('.',','):'0,00';
+    const pMed=totL>0?(totV/totL).toFixed(2).replace('.',','):'0,00';
 
     $('relResult').innerHTML=`
       <div class="kpi-grid" style="margin-top:12px">
@@ -755,21 +752,13 @@ class App {
     rank.sort((a,b)=>parseFloat(b.cons)-parseFloat(a.cons));
     const max=Math.max(...rank.map(r=>parseFloat(r.cons)))||1;
     const box=$('rankingBox');
-    if(rank.length===0){ box.innerHTML='<p class="txt-center txt-dim" style="padding:20px">Dados insuficientes</p>'; return; }
-    box.innerHTML=rank.map((r,i)=>`
-      <div class="bar-row">
-        <div class="bar-lbl">${i+1}º ${r.placa}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${(parseFloat(r.cons)/max*100).toFixed(0)}%;background:${i===0?'var(--success)':'var(--accent)'}">${r.cons} km/l</div></div>
-      </div>
-    `).join('');
+    if(rank.length===0){box.innerHTML='<p class="txt-center txt-dim" style="padding:20px">Dados insuficientes</p>';return;}
+    box.innerHTML=rank.map((r,i)=>`<div class="bar-row"><div class="bar-lbl">${i+1}º ${r.placa}</div><div class="bar-track"><div class="bar-fill" style="width:${(parseFloat(r.cons)/max*100).toFixed(0)}%;background:${i===0?'var(--success)':'var(--accent)'}">${r.cons} km/l</div></div></div>`).join('');
   }
 
   buildEvolucaoData(fil){
     const ord=fil.sort((a,b)=>new Date(a.data)-new Date(b.data));
-    return {
-      labels:ord.map(a=>fmtDate(a.data).slice(0,5)),
-      values:ord.map(a=>a.consumo||0)
-    };
+    return {labels:ord.map(a=>fmtDate(a.data).slice(0,5)),values:ord.map(a=>a.consumo||0)};
   }
 
   // ============================================
@@ -789,9 +778,21 @@ class App {
       combustivel:$('veicComb').value,consumoEsperado:$('veicConsumo').value,
       kmAtual:parseFloat($('veicKm').value)||0,ativo:true
     };
-    if(!obj.placa){ toast('Informe a placa','warn'); return; }
+    if(!obj.placa){toast('Informe a placa','warn');return;}
     loading(true,'Salvando...');
     await new Promise(r=>setTimeout(r,400));
+
+    // Tentar salvar online
+    if(isOnline()){
+      try{
+        await fetch(CONFIG.API_URL,{
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body:'acao=salvarVeic&json='+encodeURIComponent(JSON.stringify(obj))
+        });
+      }catch(e){}
+    }
+
     await this.db.put('veiculos',obj);
     await this.loadData();
     this.renderVeiculos();
@@ -812,10 +813,21 @@ class App {
       email:$('userEmail').value.trim().toLowerCase(),
       senha:$('userSenha').value,nivel:$('userNivel').value,ativo:true
     };
-    if(!obj.nome||!obj.email||!obj.senha){ toast('Preencha todos os campos','warn'); return; }
-    if(obj.senha.length<6){ toast('Senha minimo 6 caracteres','warn'); return; }
+    if(!obj.nome||!obj.email||!obj.senha){toast('Preencha todos os campos','warn');return;}
+    if(obj.senha.length<6){toast('Senha minimo 6 caracteres','warn');return;}
     loading(true,'Salvando...');
     await new Promise(r=>setTimeout(r,400));
+
+    if(isOnline()){
+      try{
+        await fetch(CONFIG.API_URL,{
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body:'acao=salvarUser&json='+encodeURIComponent(JSON.stringify(obj))
+        });
+      }catch(e){}
+    }
+
     await this.db.put('usuarios',obj);
     await this.loadData();
     this.renderUsuarios();
@@ -836,13 +848,15 @@ class App {
   }
 
   async clearCache(){
-    if(!confirm('Limpar todos os dados locais?')) return;
+    if(!confirm('Limpar todos os dados locais?'))return;
     await this.db.clear('abastecimentos');
     await this.db.clear('veiculos');
     await this.db.clear('usuarios');
-    toast('Cache limpo!','info');
+    await this.db.clear('pendentes');
+    toast('Cache limpo! Recriando demo...','info');
     await this.seedDemo();
     await this.loadData();
+    this.loadDashboard();
   }
 
   exportCSV(){
@@ -862,46 +876,63 @@ class App {
     const url=$('cfgGasUrl').value.trim();
     localStorage.setItem('gas_url',url);
     CONFIG.API_URL=url;
-    toast('URL salva! Reinicie o app para aplicar.','ok');
+    toast('URL salva!','ok');
   }
 
   // ============================================
-  // SYNC COM GOOGLE APPS SCRIPT
+  // SYNC COM GOOGLE SHEETS
   // ============================================
   async syncNow(){
-    if(!CONFIG.API_URL){ toast('Configure a URL do Google Apps Script em Perfil','warn'); return; }
-    if(!isOnline()){ toast('Sem conexao com internet','warn'); return; }
+    if(!isOnline()){toast('Sem conexao com internet','warn');return;}
     loading(true,'Sincronizando...');
+
     try{
+      // 1. Buscar dados do servidor
       const resp=await fetch(CONFIG.API_URL+'?acao=sync&user='+encodeURIComponent(this.user.email));
       const data=await resp.json();
+
       if(data.sucesso){
         if(data.veiculos) for(const v of data.veiculos) await this.db.put('veiculos',v);
         if(data.abastecimentos) for(const a of data.abastecimentos) await this.db.put('abastecimentos',a);
         if(data.usuarios) for(const u of data.usuarios) await this.db.put('usuarios',u);
-        await this.loadData();
-        toast('Sincronizado!','ok');
-        this.loadDashboard();
       }
-    }catch(e){ toast('Erro na sincronizacao: '+e.message,'err'); }
-    loading(false);
+
+      // 2. Enviar pendentes
+      const pendentes=await this.db.getAll('pendentes');
+      let enviados=0;
+      for(const p of pendentes){
+        try{
+          const r=await fetch(CONFIG.API_URL,{
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'acao=salvarAbast&json='+encodeURIComponent(JSON.stringify(p.dados))
+          });
+          const result=await r.json();
+          if(result.sucesso){await this.db.del('pendentes',p.id);enviados++;}
+        }catch(e){}
+      }
+
+      await this.loadData();
+      loading(false);
+      const msg=enviados>0?`Sincronizado! ${enviados} pendente(s) enviado(s).`:'Sincronizado!';
+      toast(msg,'ok');
+      this.loadDashboard();
+    }catch(e){
+      loading(false);
+      toast('Erro na sincronizacao: '+e.message,'err');
+      console.error(e);
+    }
   }
 
   // ============================================
   // HELPERS
   // ============================================
-  async loadData(){
-    this.data.abast=await this.db.getAll('abastecimentos');
-    this.data.veic=await this.db.getAll('veiculos');
-    this.data.users=await this.db.getAll('usuarios');
-  }
-
-  openModal(id){ $(id).classList.add('active'); }
-  closeModal(id){ $(id).classList.remove('active'); }
+  openModal(id){$(id).classList.add('active');}
+  closeModal(id){$(id).classList.remove('active');}
 }
 
 // ============================================
 // INIT
 // ============================================
-const app = new App();
+const app=new App();
 document.addEventListener('DOMContentLoaded',()=>app.init());
