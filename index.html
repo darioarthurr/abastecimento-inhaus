@@ -26,7 +26,7 @@
 <div class="load-overlay" id="loadOverlay"><div class="spinner"></div><span class="load-txt" id="loadText">Processando...</span></div>
 
 <!-- ============================================ -->
-<!-- LOGIN SCREEN -->
+<!-- LOGIN -->
 <!-- ============================================ -->
 <div class="login-wrap" id="loginWrap">
   <div class="login-logo">⛽</div>
@@ -42,7 +42,7 @@
       <input type="password" class="form-input" id="loginSenha" placeholder="Sua senha" value="admin123" autocomplete="current-password">
     </div>
     <button class="btn btn-primary" onclick="app.doLogin()">🔐 Entrar</button>
-    <p class="txt-center txt-dim mt-1" style="font-size:12px">Versao 2.0 • 100% Offline</p>
+    <p class="txt-center txt-dim mt-1" style="font-size:12px">Versao 2.1 • Conectado ao Google Sheets</p>
     <p class="txt-center txt-dim mt-1" style="font-size:11px">Demo: admin@empresa.com / admin123</p>
   </div>
 </div>
@@ -62,7 +62,7 @@
 
   <div class="scroll" id="scrollArea">
 
-    <!-- ===== DASHBOARD ===== -->
+    <!-- DASHBOARD -->
     <div class="screen active" id="tabDashboard">
       <div class="card">
         <div class="card-title">📊 Indicadores</div>
@@ -73,26 +73,21 @@
           <div class="kpi"><div class="kpi-val" id="kpiAlertas">0</div><div class="kpi-lbl">Alertas</div></div>
         </div>
       </div>
-
       <div class="card">
         <div class="card-title">⚠️ Alertas de Consumo</div>
-        <div id="dashAlertas">
-          <div class="empty"><div class="empty-ico">✅</div><h3>Tudo certo</h3><p>Nenhum veiculo com consumo anormal</p></div>
-        </div>
+        <div id="dashAlertas"><div class="empty"><div class="empty-ico">✅</div><h3>Tudo certo</h3><p>Nenhum veiculo com consumo anormal</p></div></div>
       </div>
-
       <div class="card">
         <div class="card-title">📈 Consumo por Veiculo (30 dias)</div>
         <div class="chart-wrap"><canvas id="chartConsumo"></canvas></div>
       </div>
-
       <div class="card">
         <div class="card-title">💰 Gasto Mensal</div>
         <div class="chart-wrap"><canvas id="chartGasto"></canvas></div>
       </div>
     </div>
 
-    <!-- ===== LANCAMENTO ===== -->
+    <!-- LANCAMENTO -->
     <div class="screen" id="tabLancamento">
       <div class="card">
         <div class="card-title">📝 Novo Abastecimento</div>
@@ -111,10 +106,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Combustivel <span class="req">*</span></label>
-          <select class="form-select" id="lancComb">
-            <option value="">Selecione</option>
-            <option>Gasolina</option><option>Etanol</option><option>Diesel</option><option>Diesel S10</option><option>GNV</option><option>Flex</option>
-          </select>
+          <select class="form-select" id="lancComb"><option value="">Selecione</option><option>Gasolina</option><option>Etanol</option><option>Diesel</option><option>Diesel S10</option><option>GNV</option><option>Flex</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Valor Total (R$) <span class="req">*</span></label>
@@ -146,49 +138,38 @@
       </div>
     </div>
 
-    <!-- ===== HISTORICO ===== -->
+    <!-- HISTORICO -->
     <div class="screen" id="tabHistorico">
       <div class="card">
         <div class="card-title">📋 Historico</div>
         <div class="form-group">
           <input type="text" class="form-input" id="histFiltro" placeholder="🔍 Buscar por placa, data..." oninput="app.filtrarHist()">
         </div>
-        <div id="histList">
-          <div class="empty"><div class="empty-ico">📭</div><h3>Nenhum registro</h3></div>
-        </div>
+        <div id="histList"><div class="empty"><div class="empty-ico">📭</div><h3>Nenhum registro</h3></div></div>
       </div>
     </div>
 
-    <!-- ===== GESTAO ===== -->
+    <!-- GESTAO -->
     <div class="screen" id="tabGestao">
       <div class="tabs">
         <button class="tab active" onclick="app.switchGestaoTab('veiculos')">Veiculos</button>
         <button class="tab" onclick="app.switchGestaoTab('usuarios')">Usuarios</button>
         <button class="tab" onclick="app.switchGestaoTab('relatorios')">Relatorios</button>
       </div>
-
       <div class="screen active" id="gestVeiculos">
         <button class="btn btn-primary mb-2" onclick="app.openModalVeiculo()">🚗 Cadastrar Veiculo</button>
         <div id="listaVeiculos"></div>
       </div>
-
       <div class="screen" id="gestUsuarios">
         <button class="btn btn-primary mb-2" onclick="app.openModalUsuario()">👤 Cadastrar Usuario</button>
         <div id="listaUsuarios"></div>
       </div>
-
       <div class="screen" id="gestRelatorios">
         <div class="card">
           <div class="card-title">📊 Relatorio de Consumo</div>
           <div class="form-group">
             <label class="form-label">Periodo</label>
-            <select class="form-select" id="relPeriodo" onchange="app.gerarRelatorio()">
-              <option value="7">Ultimos 7 dias</option>
-              <option value="30" selected>Ultimos 30 dias</option>
-              <option value="90">Ultimos 90 dias</option>
-              <option value="180">Ultimos 6 meses</option>
-              <option value="365">Ultimo ano</option>
-            </select>
+            <select class="form-select" id="relPeriodo" onchange="app.gerarRelatorio()"><option value="7">Ultimos 7 dias</option><option value="30" selected>Ultimos 30 dias</option><option value="90">Ultimos 90 dias</option><option value="180">Ultimos 6 meses</option><option value="365">Ultimo ano</option></select>
           </div>
           <div class="form-group">
             <label class="form-label">Veiculo</label>
@@ -207,7 +188,7 @@
       </div>
     </div>
 
-    <!-- ===== PERFIL ===== -->
+    <!-- PERFIL -->
     <div class="screen" id="tabPerfil">
       <div class="card">
         <div class="card-title">👤 Meu Perfil</div>
@@ -217,11 +198,10 @@
           <span class="list-badge badge-info" id="perfilNivel">--</span>
         </div>
       </div>
-
       <div class="card">
         <div class="card-title">⚙️ Configuracoes</div>
         <div class="form-group">
-          <label class="form-label">URL Google Apps Script (opcional)</label>
+          <label class="form-label">URL Google Apps Script</label>
           <input type="text" class="form-input" id="cfgGasUrl" placeholder="https://script.google.com/macros/s/.../exec">
           <button class="btn btn-ghost mt-1" style="min-height:44px" onclick="app.saveGasUrl()">💾 Salvar URL</button>
         </div>
@@ -234,22 +214,20 @@
           <div class="list-body"><div class="list-title">Exportar CSV</div><div class="list-sub">Baixar planilha com todos os dados</div></div>
         </div>
       </div>
-
       <div class="card">
         <div class="card-title">📱 Sobre</div>
         <p class="txt-dim" style="font-size:13px;line-height:1.7">
-          <strong>Versao:</strong> 2.0.0<br>
+          <strong>Versao:</strong> 2.1.0<br>
           <strong>Modo:</strong> <span id="modoOp">Online</span><br>
           <strong>Registros:</strong> <span id="nRegistros">0</span>
         </p>
       </div>
-
       <button class="btn btn-danger" onclick="app.doLogout()">🚪 Sair do Sistema</button>
     </div>
 
   </div>
 
-  <!-- ===== BOTTOM NAV ===== -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="app.nav('dashboard')"><span class="nav-ico">📊</span><span>Inicio</span></button>
     <button class="nav-item" onclick="app.nav('lancamento')"><span class="nav-ico">⛽</span><span>Abastecer</span></button>
@@ -263,8 +241,6 @@
 <!-- ============================================ -->
 <!-- MODAIS -->
 <!-- ============================================ -->
-
-<!-- Veiculo -->
 <div class="modal-bg" id="modalVeiculo">
   <div class="modal-box">
     <div class="modal-head"><h3>🚗 Cadastrar Veiculo</h3><button class="btn-icon" onclick="app.closeModal('modalVeiculo')">✕</button></div>
@@ -285,7 +261,6 @@
   </div>
 </div>
 
-<!-- Usuario -->
 <div class="modal-bg" id="modalUsuario">
   <div class="modal-box">
     <div class="modal-head"><h3>👤 Cadastrar Usuario</h3><button class="btn-icon" onclick="app.closeModal('modalUsuario')">✕</button></div>
@@ -302,16 +277,14 @@
   </div>
 </div>
 
-<!-- Detalhes -->
 <div class="modal-bg" id="modalDetalhe">
   <div class="modal-box">
-    <div class="modal-head"><h3>📋 Detalhes</h3><button class="btn-icon" onclick="app.closeModal('modalDetalhe')">✕</button></div>
+    <div class="modal-head"><h3>📋 Detalhes do Abastecimento</h3><button class="btn-icon" onclick="app.closeModal('modalDetalhe')">✕</button></div>
     <div class="modal-body" id="detBody"></div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="app.closeModal('modalDetalhe')">Fechar</button></div>
   </div>
 </div>
 
-<!-- Bloqueio Lancamento -->
 <div class="modal-bg" id="modalBloqueio" style="z-index:3000">
   <div class="modal-box" style="max-width:320px;text-align:center">
     <div class="modal-body" style="padding:30px 20px">
