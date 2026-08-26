@@ -6,7 +6,7 @@
 
 const CONFIG = {
   // SUBSTITUA PELO SEU URL DO GOOGLE APPS SCRIPT (DEPLOY COMO WEB APP)
-  API_URL: 'https://script.google.com/macros/s/AKfycbzp-KBJgUypoW7z5_WeTl4ZloQSiPMmgeEtgofLrOb0GCALSqE_xnNsqbrQ4271YlY/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwIG2--BO_xJQy02d0QlDM5eQe1Q_r48avW9q4RWAKiRGLebROVU2kn-9RoBUrD0PJS/exec',
 
   // ID da pasta do Google Drive para fotos (opcional, pode ser gerenciado pelo GAS)
   DRIVE_FOLDER_ID: '',
