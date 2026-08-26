@@ -1,53 +1,15 @@
 {
-  "name": "Gestão de Abastecimento - Frota",
+  "name": "Abastecimento Frota",
   "short_name": "Abastecimento",
-  "description": "Sistema de controle de abastecimento de veículos com gestão de frota",
-  "start_url": "/sistema-abastecimento-pwa/index.html",
+  "description": "Controle de abastecimento de veiculos - offline",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
   "orientation": "portrait",
   "icons": [
-    {
-      "src": "assets/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    {"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%233b82f6'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle'%3E⛽%3C/text%3E%3C/svg%3E", "sizes": "192x192", "type": "image/svg+xml"},
+    {"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%233b82f6'/%3E%3Ctext x='256' y='340' font-size='300' text-anchor='middle'%3E⛽%3C/text%3E%3C/svg%3E", "sizes": "512x512", "type": "image/svg+xml"}
   ],
   "categories": ["business", "productivity"],
   "lang": "pt-BR"
