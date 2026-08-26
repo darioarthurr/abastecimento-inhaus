@@ -1,7 +1,7 @@
 {
   "name": "Abastecimento Frota",
   "short_name": "Abastecimento",
-  "description": "Controle de abastecimento de veiculos - offline",
+  "description": "Controle de abastecimento de veiculos - Google Sheets",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0b0f19",
