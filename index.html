@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Abastecimento">
+  <meta name="description" content="Sistema de gestao de abastecimento de veiculos">
+  <meta name="format-detection" content="telephone=no">
+  <title>Gestao de Abastecimento</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icon-192x192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Badge Offline -->
+<div class="offline-badge" id="offlineBadge">⚠️ Voce esta offline. Dados salvos localmente.</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span class="loading-text" id="loadingText">Processando...</span>
+</div>
+
+<!-- ============================================ -->
+<!-- TELA DE LOGIN -->
+<!-- ============================================ -->
+<div class="screen login-screen active" id="screenLogin">
+  <div class="login-logo">⛽</div>
+  <h1 class="login-title">Gestao de Abastecimento</h1>
+  <p class="login-subtitle">Controle completo da sua frota</p>
+  <div class="login-form">
+    <div class="form-group">
+      <label class="form-label">E-mail</label>
+      <input type="email" class="form-input" id="loginEmail" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input type="password" class="form-input" id="loginSenha" placeholder="Sua senha" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" onclick="app.fazerLogin()">
+      <span>🔐</span> Entrar
+    </button>
+    <p class="text-center text-muted mt-2" style="font-size:0.8rem">Versao 1.0 - PWA Offline</p>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- APP PRINCIPAL -->
+<!-- ============================================ -->
+<div class="screen" id="screenApp" style="height:100%;display:flex;flex-direction:column">
+
+  <header class="app-header">
+    <h1><span class="icon">⛽</span><span id="headerTitle">Dashboard</span></h1>
+    <div class="header-actions">
+      <button class="btn-icon" id="btnSync" onclick="app.syncDados()" title="Sincronizar">🔄</button>
+      <button class="btn-icon" onclick="app.fazerLogout()" title="Sair">🚪</button>
+    </div>
+  </header>
+
+  <div class="scroll-container" id="scrollContainer">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="screen active" id="tabDashboard">
+      <div class="card">
+        <div class="card-title">📊 Indicadores da Frota</div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpiTotalAbastecimentos">0</div>
+            <div class="kpi-label">Abastecimentos</div>
+            <div class="kpi-trend up" id="kpiTrendAbastecimentos">+0%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpiConsumoMedio">0</div>
+            <div class="kpi-label">km/l Medio</div>
+            <div class="kpi-trend up" id="kpiTrendConsumo">+0%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpiCustoKm">R$0</div>
+            <div class="kpi-label">Custo/km</div>
+            <div class="kpi-trend down" id="kpiTrendCusto">-0%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpiAlertas">0</div>
+            <div class="kpi-label">Alertas</div>
+            <div class="kpi-trend down" id="kpiTrendAlertas">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚠️ Alertas de Consumo</div>
+        <div id="listaAlertas">
+          <div class="empty-state">
+            <div class="icon">✅</div>
+            <h3>Nenhum alerta</h3>
+            <p>Todos os veiculos estao dentro do consumo esperado</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 Consumo por Veiculo (Ultimos 30 dias)</div>
+        <div id="chartConsumoContainer">
+          <canvas id="chartConsumo"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💰 Gasto Mensal</div>
+        <div id="chartGastoContainer">
+          <canvas id="chartGasto"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LANCAMENTO ===== -->
+    <div class="screen" id="tabLancamento">
+      <div class="card">
+        <div class="card-title">📝 Novo Abastecimento</div>
+
+        <div class="form-group">
+          <label class="form-label">Veiculo <span class="required">*</span></label>
+          <select class="form-select" id="lancPlaca" onchange="app.onVeiculoChange()">
+            <option value="">Selecione o veiculo</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">KM Atual <span class="required">*</span></label>
+          <input type="number" class="form-input" id="lancKm" placeholder="Ex: 45230" inputmode="numeric">
+          <div class="text-muted mt-1" style="font-size:0.75rem" id="lancKmAnterior">KM anterior: --</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Litros Abastecidos <span class="required">*</span></label>
+          <input type="number" class="form-input" id="lancLitros" placeholder="Ex: 42.5" step="0.01" inputmode="decimal">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tipo de Combustivel <span class="required">*</span></label>
+          <select class="form-select" id="lancCombustivel">
+            <option value="">Selecione</option>
+            <option value="Gasolina">Gasolina</option>
+            <option value="Etanol">Etanol</option>
+            <option value="Diesel">Diesel</option>
+            <option value="Diesel S10">Diesel S10</option>
+            <option value="GNV">GNV</option>
+            <option value="Flex">Flex</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Valor Total (R$) <span class="required">*</span></label>
+          <input type="number" class="form-input" id="lancValor" placeholder="Ex: 250.00" step="0.01" inputmode="decimal">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Posto / Local</label>
+          <input type="text" class="form-input" id="lancPosto" placeholder="Nome do posto">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Foto do Odometro <span class="required">*</span></label>
+          <div class="photo-capture" id="photoOdometro" onclick="app.abrirCamera('odometro')">
+            <div class="placeholder">
+              <div class="icon">📷</div>
+              <span>Toque para tirar foto do odometro</span>
+            </div>
+          </div>
+          <input type="file" id="fileOdometro" accept="image/*" capture="environment" style="display:none" onchange="app.onFotoSelecionada(this, 'odometro')">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Foto da Nota Fiscal <span class="required">*</span></label>
+          <div class="photo-capture" id="photoNota" onclick="app.abrirCamera('nota')">
+            <div class="placeholder">
+              <div class="icon">📷</div>
+              <span>Toque para tirar foto da nota fiscal</span>
+            </div>
+          </div>
+          <input type="file" id="fileNota" accept="image/*" capture="environment" style="display:none" onchange="app.onFotoSelecionada(this, 'nota')">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observacoes</label>
+          <input type="text" class="form-input" id="lancObs" placeholder="Observacoes adicionais">
+        </div>
+
+        <button class="btn btn-success" onclick="app.salvarAbastecimento()">
+          <span>💾</span> Salvar Abastecimento
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== HISTORICO ===== -->
+    <div class="screen" id="tabHistorico">
+      <div class="card">
+        <div class="card-title">📋 Historico de Abastecimentos</div>
+        <div class="form-group">
+          <input type="text" class="form-input" id="filtroHistorico" placeholder="🔍 Buscar por placa, data..." oninput="app.filtrarHistorico()">
+        </div>
+        <div id="listaHistorico">
+          <div class="empty-state">
+            <div class="icon">📭</div>
+            <h3>Nenhum registro</h3>
+            <p>Os abastecimentos aparecerao aqui</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== GESTAO (ADM) ===== -->
+    <div class="screen" id="tabGestao">
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="app.switchGestaoTab('veiculos')">Veiculos</button>
+        <button class="tab-btn" onclick="app.switchGestaoTab('usuarios')">Usuarios</button>
+        <button class="tab-btn" onclick="app.switchGestaoTab('relatorios')">Relatorios</button>
+      </div>
+
+      <!-- Veiculos -->
+      <div class="screen active" id="gestaoVeiculos">
+        <button class="btn btn-primary mb-2" onclick="app.abrirModalVeiculo()">
+          <span>🚗</span> Cadastrar Veiculo
+        </button>
+        <div id="listaVeiculos">
+          <div class="empty-state">
+            <div class="icon">🚗</div>
+            <h3>Nenhum veiculo</h3>
+            <p>Cadastre os veiculos da frota</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usuarios -->
+      <div class="screen" id="gestaoUsuarios">
+        <button class="btn btn-primary mb-2" onclick="app.abrirModalUsuario()">
+          <span>👤</span> Cadastrar Usuario
+        </button>
+        <div id="listaUsuarios">
+          <div class="empty-state">
+            <div class="icon">👥</div>
+            <h3>Nenhum usuario</h3>
+            <p>Cadastre os usuarios do sistema</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Relatorios -->
+      <div class="screen" id="gestaoRelatorios">
+        <div class="card">
+          <div class="card-title">📊 Relatorio de Consumo</div>
+          <div class="form-group">
+            <label class="form-label">Periodo</label>
+            <select class="form-select" id="relPeriodo" onchange="app.gerarRelatorio()">
+              <option value="7">Ultimos 7 dias</option>
+              <option value="30" selected>Ultimos 30 dias</option>
+              <option value="90">Ultimos 90 dias</option>
+              <option value="180">Ultimos 6 meses</option>
+              <option value="365">Ultimo ano</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Veiculo</label>
+            <select class="form-select" id="relVeiculo" onchange="app.gerarRelatorio()">
+              <option value="">Todos os veiculos</option>
+            </select>
+          </div>
+          <div id="relatorioResultado"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🏆 Ranking de Eficiencia</div>
+          <div id="rankingEficiencia"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📈 Evolucao do Custo</div>
+          <div id="chartCustoEvolucaoContainer">
+            <canvas id="chartCustoEvolucao"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PERFIL ===== -->
+    <div class="screen" id="tabPerfil">
+      <div class="card">
+        <div class="card-title">👤 Meu Perfil</div>
+        <div class="list-item" style="cursor:default">
+          <div class="list-icon">👤</div>
+          <div class="list-content">
+            <div class="list-title" id="perfilNome">--</div>
+            <div class="list-subtitle" id="perfilEmail">--</div>
+          </div>
+          <span class="list-badge badge-info" id="perfilNivel">--</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ Configuracoes</div>
+        <div class="list-item" onclick="app.limparCache()">
+          <div class="list-icon">🗑️</div>
+          <div class="list-content">
+            <div class="list-title">Limpar Cache Local</div>
+            <div class="list-subtitle">Remove dados armazenados no celular</div>
+          </div>
+        </div>
+        <div class="list-item" onclick="app.exportarDados()">
+          <div class="list-icon">📥</div>
+          <div class="list-content">
+            <div class="list-title">Exportar Dados</div>
+            <div class="list-subtitle">Baixar planilha CSV com todos os dados</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📱 Sobre</div>
+        <p class="text-muted" style="font-size:0.85rem;line-height:1.6">
+          <strong>Versao:</strong> 1.0.0<br>
+          <strong>Armazenamento:</strong> Google Drive + Sheets<br>
+          <strong>Modo:</strong> <span id="modoOperacao">Online</span><br>
+          <strong>Registros pendentes:</strong> <span id="registrosPendentes">0</span>
+        </p>
+      </div>
+
+      <button class="btn btn-danger" onclick="app.fazerLogout()">
+        <span>🚪</span> Sair do Sistema
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ===== BOTTOM NAVIGATION ===== -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" onclick="app.navegar('dashboard')">
+      <span class="icon">📊</span>
+      <span>Inicio</span>
+    </button>
+    <button class="nav-item" onclick="app.navegar('lancamento')">
+      <span class="icon">⛽</span>
+      <span>Abastecer</span>
+    </button>
+    <button class="nav-item" onclick="app.navegar('historico')">
+      <span class="icon">📋</span>
+      <span>Historico</span>
+    </button>
+    <button class="nav-item hidden" id="navGestao" onclick="app.navegar('gestao')">
+      <span class="icon">⚙️</span>
+      <span>Gestao</span>
+    </button>
+    <button class="nav-item" onclick="app.navegar('perfil')">
+      <span class="icon">👤</span>
+      <span>Perfil</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: CADASTRO DE VEICULO -->
+<!-- ============================================ -->
+<div class="modal-overlay" id="modalVeiculo">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🚗 Cadastrar Veiculo</h3>
+      <button class="btn-icon" onclick="app.fecharModal('modalVeiculo')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Placa <span class="required">*</span></label>
+        <input type="text" class="form-input" id="veicPlaca" placeholder="ABC1D23" maxlength="7">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Marca</label>
+        <input type="text" class="form-input" id="veicMarca" placeholder="Ex: Toyota">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Modelo</label>
+        <input type="text" class="form-input" id="veicModelo" placeholder="Ex: Corolla">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ano</label>
+        <input type="number" class="form-input" id="veicAno" placeholder="Ex: 2022">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Capacidade do Tanque (L)</label>
+        <input type="number" class="form-input" id="veicTanque" placeholder="Ex: 50" step="0.1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Combustivel Padrao</label>
+        <select class="form-select" id="veicCombustivel">
+          <option value="Gasolina">Gasolina</option>
+          <option value="Etanol">Etanol</option>
+          <option value="Diesel">Diesel</option>
+          <option value="Diesel S10">Diesel S10</option>
+          <option value="GNV">GNV</option>
+          <option value="Flex">Flex</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Consumo Medio Esperado (km/l)</label>
+        <input type="number" class="form-input" id="veicConsumoEsperado" placeholder="Ex: 12.5" step="0.1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">KM Atual</label>
+        <input type="number" class="form-input" id="veicKmAtual" placeholder="Ex: 45000">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="app.fecharModal('modalVeiculo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="app.salvarVeiculo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: CADASTRO DE USUARIO -->
+<!-- ============================================ -->
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>👤 Cadastrar Usuario</h3>
+      <button class="btn-icon" onclick="app.fecharModal('modalUsuario')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome <span class="required">*</span></label>
+        <input type="text" class="form-input" id="userNome" placeholder="Nome completo">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mail <span class="required">*</span></label>
+        <input type="email" class="form-input" id="userEmail" placeholder="email@empresa.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha <span class="required">*</span></label>
+        <input type="password" class="form-input" id="userSenha" placeholder="Minimo 6 caracteres">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nivel de Acesso <span class="required">*</span></label>
+        <select class="form-select" id="userNivel">
+          <option value="operacao">Operacao</option>
+          <option value="adm">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="app.fecharModal('modalUsuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="app.salvarUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: DETALHES DO ABASTECIMENTO -->
+<!-- ============================================ -->
+<div class="modal-overlay" id="modalDetalhes">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📋 Detalhes do Abastecimento</h3>
+      <button class="btn-icon" onclick="app.fecharModal('modalDetalhes')">✕</button>
+    </div>
+    <div class="modal-body" id="detalhesConteudo"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="app.fecharModal('modalDetalhes')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: BLOQUEIO DE RETORNO -->
+<!-- ============================================ -->
+<div class="modal-overlay" id="modalBloqueio" style="z-index:3000">
+  <div class="modal-content" style="max-width:320px;text-align:center">
+    <div class="modal-body" style="padding:30px 20px">
+      <div style="font-size:3rem;margin-bottom:12px">⏳</div>
+      <h3 style="margin-bottom:8px">Lancamento em Andamento</h3>
+      <p class="text-muted">Voce esta no meio de um lancamento. Deseja realmente sair? Os dados nao salvos serao perdidos.</p>
+    </div>
+    <div class="modal-footer" style="flex-direction:column">
+      <button class="btn btn-primary" onclick="app.continuarLancamento()">Continuar Lancamento</button>
+      <button class="btn btn-outline" onclick="app.descartarLancamento()">Descartar e Sair</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
