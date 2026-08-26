@@ -1,64 +1,39 @@
-⛽ Sistema de Gestao de Abastecimento v2.0
-PWA completo para controle de abastecimento de veiculos. Funciona 100% offline com sincronizacao opcional ao Google Sheets.
-✨ O que ha de novo na v2.0
-100% funcional offline — dados de demonstracao inclusos
-Mobile-first — interface otimizada para celular
-Zero dependencias externas — graficos nativos em Canvas
-CORS resolvido — comunicacao segura com Google Apps Script
-Touch-optimized — botoes grandes, gestos suaves, feedback visual
-Icones inline — nada de 404, funciona em qualquer host
-📱 Telas
-Tela	Funcoes
-Login	Autenticacao local (demo pre-carregado)
-Dashboard	KPIs, alertas de consumo, graficos
-Abastecer	Lancamento com fotos, calculo automatico de consumo
-Historico	Busca, filtros, detalhes com fotos
-Gestao	Cadastro de veiculos, usuarios, relatorios
-Perfil	Configuracao de sync, export CSV
-🚀 Deploy Rapido (3 minutos)
-1. Hospedar o PWA
-Suba os arquivos em qualquer host estatico (GitHub Pages, Netlify, Vercel, Cloudflare Pages)
-Ou abra o `index.html` direto no navegador para testar
-2. Testar imediatamente (Modo Demo)
-Acesse o app
+⛽ Sistema de Gestao de Abastecimento v2.1
+Correções da v2.1
+✅ Scroll/Touch corrigido
+Problema: Tela travada, não conseguia rolar
+Solução: Bloqueio de pull-to-refresh agora só atua no topo do container de scroll, não mais globalmente. Scroll livre em todas as direções.
+✅ Fotos nos detalhes
+Problema: Fotos não apareciam ao ver detalhes do abastecimento
+Solução: Modal de detalhes agora verifica e exibe corretamente as fotos base64. Grid de fotos com clique para ampliar.
+✅ Conexão com Google Sheets
+Problema: CORS bloqueando, sync falhando
+Solução:
+GAS agora responde a `OPTIONS` (preflight CORS)
+Headers `Access-Control-Allow-Origin: *` em todas as respostas
+App tenta salvar no Sheets PRIMEIRO, fallback IndexedDB se offline
+Botão sync envia pendentes e baixa dados atualizados
+✅ IDs do usuário embutidos
+Spreadsheet: `1oNIv7kL7J0oXky41vUz1_nkf56IBFPpEu9TIYyJIVaA`
+Drive Folder: `1O-UMdVh3Ye2zXcwmOOiblQtcInwd`
+Apps Script: `AKfycby8YT2SXPf20J5Jq-iJ5E9NhoJCgQGZURVh9A-yg3-tRuOyGk4EBGjZPojfwEJMuDfu`
+🚀 Deploy do Backend (Google Apps Script)
+Acesse sua planilha: `https://docs.google.com/spreadsheets/d/1oNIv7kL7J0oXky41vUz1_nkf56IBFPpEu9TIYyJIVaA/edit`
+Vá em Extensões > Apps Script
+Apague todo o código existente
+Cole o conteúdo de `Code.gs`
+Salve (Ctrl+S)
+Clique em Deploy > Novo deploy
+Tipo: Aplicativo da Web
+Execute como: Eu
+Acesso: Qualquer pessoa
+Autorize as permissões (Drive + Sheets)
+Copie a nova URL e atualize no app (Perfil > Configurações)
+🚀 Deploy do Frontend
+Suba os arquivos no GitHub Pages (ou qualquer host estático)
+Acesse no celular
+Adicione à tela inicial
+📱 Teste imediato (Demo)
 Login: `admin@empresa.com`
 Senha: `admin123`
-Pronto! Ja funciona com 4 veiculos e 6 abastecimentos de demonstracao
-3. Conectar ao Google Sheets (opcional)
-Crie uma planilha Google Sheets
-Va em Extensoes > Apps Script
-Cole o conteudo de `Code.gs`
-Faca Deploy > Novo deploy > Aplicativo da Web
-Execute como: Eu | Acesso: Qualquer pessoa
-Copie a URL de execucao
-No app, va em Perfil > Configuracoes e cole a URL
-Toque em Sincronizar (🔄 no header)
-📁 Arquivos
-```
-sistema-abastecimento-v2/
-├── index.html      # Interface PWA
-├── styles.css      # Estilos mobile-first
-├── app.js          # Logica completa (offline + sync)
-├── sw.js           # Service Worker
-├── manifest.json   # Manifesto PWA
-├── Code.gs         # Backend Google Apps Script
-└── README.md       # Este arquivo
-```
-🔐 Acesso
-Perfil	Email	Senha
-Admin	admin@empresa.com	admin123
-Operacao	op@empresa.com	op1234
-📸 Fotos no Celular
-O app usa `<input capture="environment">` que abre a camera nativa do celular automaticamente. As fotos ficam:
-Salvas no IndexedDB do navegador (offline)
-Enviadas para Google Drive (quando sincronizado)
-🛠 Tecnologias
-HTML5, CSS3, JavaScript (ES6+)
-IndexedDB (armazenamento local)
-Canvas API (graficos nativos)
-Service Worker (PWA offline)
-Google Apps Script (backend)
-Google Sheets (banco de dados)
-Google Drive (armazenamento de fotos)
-📄 Licenca
-MIT — Use livremente para gestao da sua frota.
+Funciona offline imediatamente. Sincronize quando quiser enviar para a planilha.
